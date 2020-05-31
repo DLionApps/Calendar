@@ -19,6 +19,7 @@
     "expo-asset": "^8.1.4",
     "expo-constants": "^9.0.0",
     "expo-font": "^8.1.1",
+    "expo-sqlite": "^8.1.0",
     "expo-updates": "~0.1.0",
     "expo-web-browser": "^8.1.1",
     "moment": "^2.24.0",
