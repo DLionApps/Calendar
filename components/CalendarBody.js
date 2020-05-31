@@ -17,9 +17,8 @@ import {
 import { ScrollView } from "react-native-gesture-handler";
 import { MonoText } from "../components/StyledText";
 import Colors from "../constants/Colors";
-import useCalender from "../hooks/Calendar";
 import { CalendarContext } from "../contexts/SelectedCalendarData";
-import staticMonthArray from "../assets/staticFiles/LandingMonthDetails";
+import { monthArray } from "../assets/staticFiles/LandingMonthDetails";
 import Modal, {
   ModalContent,
   SlideAnimation,
@@ -39,10 +38,8 @@ const CalendarBody = (props) => {
   const [isMemoModalShow, setIsMemoModalShow] = useState(false);
   const [selectedDate, setSelectedDate] = useState({});
 
-  // console.log(calendarData.weekArray);
   useEffect(() => {
     if (calendarData === undefined) {
-      setWeekArray(staticMonthArray);
     } else {
       setWeekArray(calendarData.weekArray);
     }
