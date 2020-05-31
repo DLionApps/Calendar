@@ -22,13 +22,9 @@ const CalanderScreen = () => {
   const getInitialValue = useCalender(true, false);
   const holidaysInMonth = useHolidays({ month: 4, year: 2020 });
 
-  const monthNavigation = (isForward) => {
-    setNavigationViaMonths(isForward);
-  };
-
   return (
     <View style={styles.container}>
-      <DayNames month="April" year={2020} monthNavigation={monthNavigation} />
+      <DayNames />
       <CalendarBody />
       <HolidayDetails holidayDetails={holidaysInMonth} />
     </View>
