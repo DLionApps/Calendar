@@ -15,14 +15,7 @@ const TabBarIcon = (props) => {
 };
 
 const NavigationIcon = (props) => {
-  return (
-    <Ionicons
-      name={props.name}
-      size={30}
-      style={{ marginBottom: -3 }}
-      // color={props.focused ? Colors.tabIconSelected : Colors.tabIconDefault}
-    />
-  );
+  return <Ionicons name={props.name} size={30} color={Colors.gray} />;
 };
 
 export { TabBarIcon, NavigationIcon };
