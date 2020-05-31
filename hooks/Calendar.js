@@ -30,6 +30,12 @@ const useCalender = (isInitialCall, isForword) => {
       monthDetails.firstDayOfMonth = moment(currentDate)
         .startOf("month")
         .format("dddd");
+      monthDetails.currentMonth = moment().format("MMMM");
+      monthDetails.currentMonthNumber = moment()
+        .month(monthDetails.currentMonth)
+        .format("M");
+      monthDetails.currentYear = moment().format("YYYY");
+
       let currentMonthDates = createMonthArray(monthDetails, holidaysInMonth);
 
       monthDetails.dateArray = setupMonthDatesWithNearbyMonthDates(
