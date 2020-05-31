@@ -1,5 +1,5 @@
 import * as WebBrowser from "expo-web-browser";
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useReducer } from "react";
 import {
   Image,
   Platform,
@@ -19,47 +19,173 @@ import Colors from "../constants/Colors";
 import { NavigationIcon } from "../components/TabBarIcon";
 import { NavigationContext } from "../contexts/CalendarNavigation";
 import useCalender from "../hooks/Calendar";
+import { CalendarContext } from "../contexts/SelectedCalendarData";
+import {
+  dayArray,
+  monthDetail,
+} from "../assets/staticFiles/LandingMonthDetails";
+import useHolidays from "../hooks/Holidays";
 
-const dayArray = [
-  { name: "MON" },
-  { name: "TUE" },
-  { name: "WED" },
-  { name: "THU" },
-  { name: "FRI" },
-  { name: "SAT" },
-  { name: "SUN" },
+var moment = require("moment");
+
+let weekDayMap = [
+  { day: "Monday", weekValue: 1 },
+  { day: "Tuesday", weekValue: 2 },
+  { day: "Wednesday", weekValue: 3 },
+  { day: "Thursday", weekValue: 4 },
+  { day: "Friday", weekValue: 5 },
+  { day: "Saturday", weekValue: 6 },
+  { day: "Saturday", weekValue: 7 },
 ];
+
+const createMonthArray = (monthDetails, holidaysInMonth) => {
+  let dateArray = [];
+  for (let i = 0; i < monthDetails.dateCountInCurrentMonth; i++) {
+    if (holidaysInMonth.some((h) => h.date === i + 1)) {
+      dateArray.push(holidaysInMonth.filter((h) => h.date === i + 1)[0]);
+    } else {
+      dateArray.push({
+        date: i + 1,
+        isMercantile: false,
+        isPublic: false,
+        isBank: false,
+      });
+    }
+  }
+
+  return dateArray;
+};
+
+const setupMonthDatesWithNearbyMonthDates = (
+  dateArray,
+  monthStartingDayInWeek
+) => {
+  let datesInMonthArray = [];
+
+  for (let i = 1; i < monthStartingDayInWeek; i++) {
+    datesInMonthArray.push({
+      date: undefined,
+      isMercantile: false,
+      isPublic: false,
+      isBank: false,
+    });
+  }
+
+  dateArray.forEach((d) => {
+    datesInMonthArray.push(d);
+  });
+
+  const remainingDates = 42 - datesInMonthArray.length;
+
+  for (let i = 1; i <= remainingDates; i++) {
+    datesInMonthArray.push({
+      date: undefined,
+      isMercantile: false,
+      isPublic: false,
+      isBank: false,
+    });
+  }
+  return datesInMonthArray;
+};
+
+const setupDatesInMonthArrayToWeeekInMonth = (datesInMonthArray) => {
+  let monthDatesByWeeklyArray = [];
+
+  for (let i = 0; i < 6; i++) {
+    monthDatesByWeeklyArray.push(datesInMonthArray.splice(0, 7));
+  }
+  return monthDatesByWeeklyArray;
+};
 
 const DayNames = (props) => {
   const { NavigationState } = useContext(NavigationContext);
   const [NavigationData, setNavigationData] = NavigationState;
+  const { calendarState } = useContext(CalendarContext);
+  const [calendarData, setCalendarData] = calendarState;
+  const [monthAndYear, setMonthAndYear] = useState({});
+  const [forwardCount, setForwardCount] = useState(0);
+  const [backwardCount, setBackwardCount] = useState(0);
+  const holidaysInMonth = useHolidays({ month: 4, year: 2020 });
+  let monthDetails = {};
 
-  const [initialRender, setInitialRender] = useState(true);
+  useEffect(() => {
+    const currentDate = moment();
+    prepareReqestedMonthToDisplay(currentDate);
+  }, []);
 
-  // useEffect(() => {
-  //   if (initialRender === true) {
-  //     console.log(initialRender);
-  //     setInitialRender(false);
-  //   } else {
-  //     console.log(initialRender);
-  //   }
-  //   // useCalender(false, NavigationData);
-  // }, [NavigationData]);
+  useEffect(() => {
+    if (calendarData === undefined) {
+      setMonthAndYear(monthDetail);
+    } else {
+      setMonthAndYear(calendarData);
+    }
+  }, [calendarData]);
+
+  const prepareReqestedMonthToDisplay = (currentDate) => {
+    monthDetails.dateCountInCurrentMonth = moment(currentDate).daysInMonth();
+    monthDetails.firstDayOfMonth = moment(currentDate)
+      .startOf("month")
+      .format("dddd");
+    monthDetails.currentMonth = moment(currentDate).format("MMMM");
+    monthDetails.currentMonthNumber = moment(currentDate)
+      .month(monthDetails.currentMonth)
+      .format("M");
+    monthDetails.currentYear = moment(currentDate).format("YYYY");
+
+    let currentMonthDates = createMonthArray(monthDetails, holidaysInMonth);
+
+    monthDetails.dateArray = setupMonthDatesWithNearbyMonthDates(
+      currentMonthDates,
+      weekDayMap.find((d) => d.day === monthDetails.firstDayOfMonth).weekValue
+    );
+    monthDetails.weekArray = setupDatesInMonthArrayToWeeekInMonth(
+      monthDetails.dateArray
+    );
+    setCalendarData(monthDetails);
+  };
+
+  const setupNavigationCounts = (direction) => {
+    let countTotal;
+    if (direction === true) {
+      if (backwardCount === 0) {
+        countTotal = forwardCount + 1;
+        setForwardCount(countTotal);
+
+        prepareReqestedMonthToDisplay(moment().add(countTotal, "months"));
+      } else {
+        countTotal = backwardCount - 1;
+        setBackwardCount(countTotal);
+        prepareReqestedMonthToDisplay(moment().subtract(countTotal, "months"));
+      }
+    } else {
+      if (forwardCount === 0) {
+        countTotal = backwardCount + 1;
+        setBackwardCount(countTotal);
+        prepareReqestedMonthToDisplay(moment().subtract(countTotal, "months"));
+      } else {
+        countTotal = forwardCount - 1;
+        setForwardCount(countTotal);
+        prepareReqestedMonthToDisplay(moment().add(countTotal, "months"));
+      }
+    }
+  };
 
   return (
     <View style={styles.container}>
       <View style={styles.topContainer}>
         <TouchableOpacity
           onPress={() => {
-            props.monthNavigation(false);
+            setupNavigationCounts(false);
           }}
         >
           <NavigationIcon name="md-arrow-round-back" />
         </TouchableOpacity>
-        <Text style={styles.topText}>{props.month + " " + props.year}</Text>
+        <Text style={styles.topText}>
+          {monthAndYear.currentMonth + " " + monthAndYear.currentYear}
+        </Text>
         <TouchableOpacity
           onPress={() => {
-            props.monthNavigation(true);
+            setupNavigationCounts(true);
           }}
         >
           <NavigationIcon name="md-arrow-round-forward" />
@@ -100,7 +226,7 @@ const styles = StyleSheet.create({
     height: "65%",
     // backgroundColor: "red",
     alignItems: "center",
-    justifyContent: "center",
+    justifyContent: "space-evenly",
     flexDirection: "row",
   },
   dayNameContainer: {
