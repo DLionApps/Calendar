@@ -17,7 +17,7 @@ import {
 import { ScrollView } from "react-native-gesture-handler";
 import { MonoText } from "../components/StyledText";
 import Colors from "../constants/Colors";
-import useCalender from "../hooks/Calendar";
+import { useMemoAdd } from "../hooks/Memo";
 import { CalendarContext } from "../contexts/SelectedCalendarData";
 import staticMonthArray from "../assets/staticFiles/LandingMonthDetails";
 import Modal, {
@@ -27,12 +27,48 @@ import Modal, {
   ModalButton,
 } from "react-native-modals";
 import Icon from "react-native-vector-icons/FontAwesome";
-import { Input } from "react-native-elements";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { Card, Button, Input } from "react-native-elements";
+// import * as SQLite from "expo-sqlite";
+
+var moment = require("moment");
+// const db = SQLite.openDatabase("CalendarDB");
 
 const MemoModal = (props) => {
   const [showDatepicker, setShowDatepicker] = useState(false);
-  const [startTime, setStartTime] = useState(undefined);
+  const [date, setDate] = useState(new Date(1598051730000));
+  const [memo, setMemo] = useState({
+    date: props.selectedDate,
+    time: moment(new Date()).format("hh:mm:A"),
+  });
+  const aa = useMemoAdd();
+  // console.log(aa);
+
+  const handleTimePicker = () => {
+    setShowDatepicker(true);
+  };
+
+  const onChange = (event, selectedDate) => {
+    setShowDatepicker(false);
+    const memoTime =
+      selectedDate !== undefined
+        ? moment(selectedDate).format("hh:mm:A")
+        : moment(new Date()).format("hh:mm:A");
+    setMemo({ ...memo, time: memoTime });
+  };
+
+  // const createDBIfNotexists = async () => {
+  //   db.transaction((tx) => {
+  //     tx.executeSql(
+  //       "create table if not exists Momo (Id integer primary key not null, d int, value text);"
+  //     );
+  //   });
+  // };
+
+  const addMemo = () => {
+    // console.log(memo);
+    // SQLite.openDatabase(name, version, description, size);
+  };
 
   return (
     <Modal
@@ -51,40 +87,85 @@ const MemoModal = (props) => {
     >
       <ModalContent>
         <ScrollView>
-          <View>
-            <Input label="Title" />
-          </View>
-          <TouchableOpacity
-            onPress={() => {
-              setShowDatepicker(true);
-              console.log("in");
-            }}
-            style={{ backgroundColor: "red" }}
-          >
-            {/* <View> */}
+          <View style={{ paddingBottom: "4%" }}>
             <Input
-              label="Start"
-              rightIcon={<Icon name="chevron-right" size={24} />}
+              placeholder="Title"
+              onChangeText={(value) => {
+                setMemo({ ...memo, title: value });
+              }}
             />
-            {showDatepicker && (
+          </View>
+          <View style={styles.timeWrapper}>
+            <View
+              style={{ flexDirection: "row", justifyContent: "space-between" }}
+            >
+              <TouchableOpacity onPress={handleTimePicker}>
+                <Text>Start Time</Text>
+                <Text>{memo.time}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity>
+                <Text>End Time</Text>
+                <Text>{memo.time}</Text>
+              </TouchableOpacity>
+            </View>
+
+            {showDatepicker === true && (
               <DateTimePicker
                 testID="dateTimePicker"
-                // timeZoneOffsetInMinutes={0}
-                value={startTime}
+                timeZoneOffsetInMinutes={0}
+                value={date}
                 mode="time"
-                is24Hour="false"
+                is24Hour={false}
                 display="default"
-                onChange={(e) => {
-                  console.log(e);
-                }}
+                onChange={onChange}
               />
             )}
-            {/* </View> */}
-          </TouchableOpacity>
+          </View>
+          <View style={{ paddingBottom: "4%", paddingTop: "4%" }}>
+            <Input
+              placeholder="Content"
+              multiline={true}
+              maxLength={100}
+              onChangeText={(value) => {
+                setMemo({ ...memo, content: value });
+              }}
+            />
+          </View>
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-evenly" }}
+          >
+            <Button
+              title="Cancel"
+              type="outline"
+              icon={<Icon name="times" size={18} color="red" />}
+              onPress={() => {
+                props.closeModalFunc();
+              }}
+            />
+            <Button
+              title="Save"
+              type="outline"
+              icon={<Icon name="check" size={18} color="blue" />}
+              onPress={addMemo}
+            />
+          </View>
         </ScrollView>
       </ModalContent>
     </Modal>
   );
 };
+
+const styles = StyleSheet.create({
+  timeWrapper: {
+    // backgroundColor: "red",
+    padding: "5%",
+    paddingLeft: "10%",
+    paddingRight: "10%",
+    borderRadius: 40,
+    borderWidth: 1,
+    paddingBottom: "4%",
+  },
+  multiLineTextBox: {},
+});
 
 export default MemoModal;
