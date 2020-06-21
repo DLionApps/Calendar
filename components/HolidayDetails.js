@@ -1,5 +1,5 @@
 import * as WebBrowser from "expo-web-browser";
-import * as React from "react";
+import React, { useState, useContext, useEffect } from "react";
 import {
   Image,
   Platform,
@@ -16,15 +16,28 @@ import {
 import { ScrollView } from "react-native-gesture-handler";
 import { MonoText } from "./StyledText";
 import Colors from "../constants/Colors";
+import { CalendarContext } from "../contexts/SelectedCalendarData";
 
-const HolidayDetails = (props) => {
+const HolidayDetails = () => {
+  const { calendarState } = useContext(CalendarContext);
+  const [calendarData, setCalendarData] = calendarState;
+  const [holidays, setHolidays] = useState([]);
+
+  useEffect(() => {
+    if (calendarData !== undefined) {
+      setHolidays(calendarData.holidays);
+    } else {
+      setHolidays([]);
+    }
+  }, [calendarData]);
+
   return (
     <View style={styles.container}>
       <ScrollView
         // style={styles.container}
         contentContainerStyle={styles.contentContainer}
       >
-        {props.holidayDetails.map((holidayDetail, index) => {
+        {holidays.map((holidayDetail, index) => {
           return (
             <View
               style={[
@@ -37,17 +50,17 @@ const HolidayDetails = (props) => {
               key={index}
             >
               <View style={styles.dateContainer}>
-                <Text>{holidayDetail.date}</Text>
+                <Text>{holidayDetail.Date}</Text>
               </View>
               <View style={styles.detailsContainer}>
                 <View>
-                  <Text>{holidayDetail.reason}</Text>
+                  <Text>{holidayDetail.Reason}</Text>
                 </View>
                 <View>
                   <Text style={styles.holidayType}>
-                    {holidayDetail.isPublic === true ? " Public," : ""}{" "}
-                    {holidayDetail.isBank === true ? " Bank," : ""}
-                    {holidayDetail.isMercantile === true
+                    {holidayDetail.IsPublic === true ? " Public," : ""}{" "}
+                    {holidayDetail.IsBank === true ? " Bank," : ""}
+                    {holidayDetail.IsMercantile === true
                       ? " Mercantile"
                       : ""}{" "}
                     Holiday
