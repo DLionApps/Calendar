@@ -25,4 +25,7 @@ const monthDetail = {
   currentMonthNumber: 0,
 };
 
-export { monthArray, monthDetail, dayArray };
+const holidayTableCreateQuery =
+  "CREATE TABLE Holiday (ID INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT, Year INTEGER NOT NULL, MonthNumber INTEGER NOT NULL, MonthText TEXT NOT NULL, Date INTEGER NOT NULL, Reason TEXT NOT NULL, IsPublic INTEGER NOT NULL DEFAULT 0, IsBank INTEGER NOT NULL DEFAULT 0, IsMercantile INTEGER NOT NULL DEFAULT 0);";
+
+export { monthArray, monthDetail, dayArray, holidayTableCreateQuery };
