@@ -18,15 +18,17 @@ import { MonoText } from "../components/StyledText";
 import Colors from "../constants/Colors";
 import { NavigationIcon } from "../components/TabBarIcon";
 import { NavigationContext } from "../contexts/CalendarNavigation";
-import useCalender from "../hooks/Calendar";
+// import useCalender from "../hooks/Calendar";
 import { CalendarContext } from "../contexts/SelectedCalendarData";
 import {
   dayArray,
   monthDetail,
 } from "../assets/staticFiles/LandingMonthDetails";
 import useHolidays from "../hooks/Holidays";
+import * as SQLite from "expo-sqlite";
 
 var moment = require("moment");
+const db = SQLite.openDatabase("CalendarDBEX.db");
 
 let weekDayMap = [
   { day: "Monday", weekValue: 1 },
@@ -38,27 +40,39 @@ let weekDayMap = [
   { day: "Saturday", weekValue: 7 },
 ];
 
-const createMonthArray = (monthDetails, holidaysInMonth) => {
+const createMonthArray = (monthDetails, holidaysInMonth, callBack) => {
   let dateArray = [];
   for (let i = 0; i < monthDetails.dateCountInCurrentMonth; i++) {
-    if (holidaysInMonth.some((h) => h.date === i + 1)) {
-      dateArray.push(holidaysInMonth.filter((h) => h.date === i + 1)[0]);
+    if (holidaysInMonth.some((h) => h.Date === i + 1)) {
+      const selectedHoliday = holidaysInMonth.filter(
+        (h) => h.Date === i + 1
+      )[0];
+      dateArray.push({
+        date: selectedHoliday.Date,
+        isBank: selectedHoliday.IsBank === true ? true : false,
+        isMercantile: selectedHoliday.IsMercantile === true ? true : false,
+        isPublic: selectedHoliday.IsPublic === true ? true : false,
+        reason: selectedHoliday.Reason,
+        isHoliday: true,
+      });
     } else {
       dateArray.push({
         date: i + 1,
         isMercantile: false,
         isPublic: false,
         isBank: false,
+        isHoliday: false,
       });
     }
   }
 
-  return dateArray;
+  callBack(dateArray);
 };
 
 const setupMonthDatesWithNearbyMonthDates = (
   dateArray,
-  monthStartingDayInWeek
+  monthStartingDayInWeek,
+  callBack
 ) => {
   let datesInMonthArray = [];
 
@@ -85,7 +99,7 @@ const setupMonthDatesWithNearbyMonthDates = (
       isBank: false,
     });
   }
-  return datesInMonthArray;
+  callBack(datesInMonthArray);
 };
 
 const setupDatesInMonthArrayToWeeekInMonth = (datesInMonthArray) => {
@@ -97,6 +111,75 @@ const setupDatesInMonthArrayToWeeekInMonth = (datesInMonthArray) => {
   return monthDatesByWeeklyArray;
 };
 
+const loadHolidays = (year, month, callBack) => {
+  // const query =
+  //   "insert into Holiday (ID, Year, MonthNumber, MonthText, Date, Reason, IsPublic, IsBank, IsMercantile) values (null, ?, ?, ?, ?, ?, ?, ?, ?)";
+  // const params = [2020, 7, "July", 4, "Esala Full Moon Poya Day", 1, 1, 1];
+  // db.transaction(
+  //   (tx) => {
+  //     tx.executeSql(
+  //       query,
+  //       params,
+  //       (tx, res) => {
+  //         console.log(res);
+  //       },
+  //       function (tx, er) {
+  //         console.log(er);
+  //         return;
+  //       }
+  //     );
+  //   },
+  //   (e) => {},
+  //   (s) => {}
+  // );
+  // console.log(
+  //   "SELECT * FROM Holiday WHERE Year = " + year + " AND MonthText = " + month
+  // );
+  db.transaction(
+    (tx) => {
+      tx.executeSql(
+        "SELECT * FROM Holiday WHERE Year=? AND MonthText=?",
+        [year, month],
+        (tx, res) => {
+          res.rows._array.forEach((h) => {
+            h.IsBank = h.IsBank === 1 ? true : false;
+            h.IsMercantile = h.IsMercantile === 1 ? true : false;
+            h.IsPublic = h.IsPublic === 1 ? true : false;
+          });
+          callBack(res.rows._array);
+        },
+        function (tx, errror) {
+          console.log("Holiday retrieve query execute error.");
+          return;
+        }
+      );
+    },
+    (error) => {
+      console.log("Holiday retrieve transaction execute error.");
+    },
+    (susccess) => {
+      // console.log(susccess);
+    }
+  );
+
+  // try {
+  //   db.executeSql(
+  //     "select * from items",
+  //     [],
+  //     (ss) => {
+  //       console.log("done");
+  //     },
+  //     (er) => {
+  //       console.log("err");
+  //     }
+  //   );
+  //   console.log(true);
+  // } catch (e) {
+  //   console.log(false);
+  //   createHolidayTable();
+  // }
+};
+
 const DayNames = (props) => {
   const { NavigationState } = useContext(NavigationContext);
   const [NavigationData, setNavigationData] = NavigationState;
@@ -105,7 +188,7 @@ const DayNames = (props) => {
   const [monthAndYear, setMonthAndYear] = useState({});
   const [forwardCount, setForwardCount] = useState(0);
   const [backwardCount, setBackwardCount] = useState(0);
-  const holidaysInMonth = useHolidays({ month: 4, year: 2020 });
+  // const holidaysInMonth = useHolidays({ month: 4, year: 2020 });
   let monthDetails = {};
 
   useEffect(() => {
@@ -132,16 +215,31 @@ const DayNames = (props) => {
       .format("M");
     monthDetails.currentYear = moment(currentDate).format("YYYY");
 
-    let currentMonthDates = createMonthArray(monthDetails, holidaysInMonth);
-
-    monthDetails.dateArray = setupMonthDatesWithNearbyMonthDates(
-      currentMonthDates,
-      weekDayMap.find((d) => d.day === monthDetails.firstDayOfMonth).weekValue
-    );
-    monthDetails.weekArray = setupDatesInMonthArrayToWeeekInMonth(
-      monthDetails.dateArray
-    );
-    setCalendarData(monthDetails);
+    try {
+      loadHolidays(
+        monthDetails.currentYear,
+        monthDetails.currentMonth,
+        (holidays) => {
+          monthDetails.holidays = holidays;
+          createMonthArray(monthDetails, holidays, (currentMonthDates) => {
+            setupMonthDatesWithNearbyMonthDates(
+              currentMonthDates,
+              weekDayMap.find((d) => d.day === monthDetails.firstDayOfMonth)
+                .weekValue,
+              (dateArray) => {
+                monthDetails.dateArray = dateArray;
+                monthDetails.weekArray = setupDatesInMonthArrayToWeeekInMonth(
+                  dateArray
+                );
+                setCalendarData(monthDetails);
+              }
+            );
+          });
+        }
+      );
+    } catch (error) {
+      console.log("day names try catch");
+    }
   };
 
   const setupNavigationCounts = (direction) => {
