@@ -16,8 +16,11 @@ import BottomTabNavigator from "./navigation/BottomTabNavigator";
 import useLinking from "./navigation/useLinking";
 import { CalendarProvider } from "./contexts/SelectedCalendarData";
 import { NavigationProvider } from "./contexts/CalendarNavigation";
+import { holidayTableCreateQuery } from "./assets/staticFiles/LandingMonthDetails";
+import * as SQLite from "expo-sqlite";
 
 const Stack = createStackNavigator();
+const db = SQLite.openDatabase("CalendarDBEX.db");
 
 export default function App(props) {
   const [val, setVal] = useState(0);
@@ -46,6 +49,7 @@ export default function App(props) {
           ...Ionicons.font,
           "space-mono": require("./assets/fonts/SpaceMono-Regular.ttf"),
         });
+        await dbOperations();
       } catch (e) {
         // We might want to provide this error information to an error reporting service
         console.warn(e);
@@ -57,6 +61,21 @@ export default function App(props) {
 
     loadResourcesAndDataAsync();
   }, []);
+
+  const dbOperations = () => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        holidayTableCreateQuery,
+        [],
+        (success) => {
+          // console.log("Holiday Table Created");
+        },
+        (errror) => {
+          // console.log("Holiday Table error");
+        }
+      );
+    });
+  };
 
   if (!isLoadingComplete && !props.skipLoadingScreen) {
     return null;
