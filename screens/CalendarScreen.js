@@ -13,20 +13,17 @@ import { MonoText } from "../components/StyledText";
 import DayNames from "../components/DayNames";
 import CalendarBody from "../components/CalendarBody";
 import HolidayDetails from "../components/HolidayDetails";
-import useCalender from "../hooks/Calendar";
 import useHolidays from "../hooks/Holidays";
 
 const CalanderScreen = () => {
   const [initialRender, setInitialRender] = useState(true);
   const [navigationViaMonths, setNavigationViaMonths] = useState(false);
-  const getInitialValue = useCalender(true, false);
-  const holidaysInMonth = useHolidays({ month: 4, year: 2020 });
 
   return (
     <View style={styles.container}>
       <DayNames />
       <CalendarBody />
-      <HolidayDetails holidayDetails={holidaysInMonth} />
+      <HolidayDetails />
     </View>
   );
 };
